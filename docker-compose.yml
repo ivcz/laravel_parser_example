@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+    blog_laravel:
+        container_name: blog-laravel
+        build:
+            context: './blogposts/docker/laravel'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        ports:
+            - '8081:80'
+        volumes:
+            - './blogposts:/var/www/html'
+        depends_on:
+            - blog_db
+        networks:
+            blog:
+                ipv4_address: 172.1.0.10
+            storage:
+
+    blog_db:
+        image: postgres
+        container_name: blog-postgres
+        volumes:
+            - './blogposts/db_volume:/var/lib/postgresql/data'
+        networks:
+            blog:
+                ipv4_address: 172.1.0.100
+        environment:
+            POSTGRES_DB: 'blog_db'
+            POSTGRES_USER: 'blog_db_user'
+            POSTGRES_PASSWORD: 'strongpassword'
+
+    storage_laravel:
+        container_name: storage-laravel
+        build:
+            context: './storage/docker/laravel'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        ports:
+            - '8082:80'
+        volumes:
+            - './storage:/var/www/html'
+        depends_on:
+            - storage_db
+        networks:
+            storage:
+                ipv4_address: 172.2.0.10
+            blog:
+
+    storage_db:
+        image: postgres
+        container_name: storage-postgres
+        volumes:
+            - './storage/db_volume:/var/lib/postgresql/data'
+        networks:
+            storage:
+                ipv4_address: 172.2.0.100
+        environment:
+            POSTGRES_DB: 'storage_db'
+            POSTGRES_USER: 'storage_db_user'
+            POSTGRES_PASSWORD: 'strongpassword'
+
+networks: 
+    blog:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.1.0.0/16
+    storage:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.2.0.0/16
